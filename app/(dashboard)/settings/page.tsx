@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import toast, { Toaster } from 'react-hot-toast';
-import { userApi, ChangePasswordPayload, UpdateUserPayload } from '@/api/user';
+import { userApi, ChangePasswordPayload, UpdateUserPayload, ApiResponse, User } from '@/api/user';
 
 const COUNTRIES = [
   { code: 'NG', name: 'Nigeria',        flag: '🇳🇬' },
@@ -77,13 +77,12 @@ export default function SettingsPage() {
     old: false, new: false, confirm: false,
   });
 
-  const { data: userData, isLoading } = useQuery({
+  const { data: userData, isLoading, isError } = useQuery({
     queryKey: ['user'],
-    queryFn: () => userApi.getUser(),
-    onError: () => toast.error('Failed to load your profile'),
-  } as any);
+    queryFn: (): Promise<ApiResponse<User>> => userApi.getUser(),
+  });
 
-  const defaultProfile = (d: typeof userData['data']) => ({
+  const defaultProfile = (d: User | undefined) => ({
     firstName: d?.firstName || '',
     lastName:  d?.lastName  || '',
     email:     d?.email     || '',
@@ -91,6 +90,10 @@ export default function SettingsPage() {
     country:   d?.country   || '',
     currency:  d?.currency  || '',
   });
+
+  useEffect(() => {
+    if (isError) toast.error('Failed to load your profile');
+  }, [isError]);
 
   useEffect(() => {
     if (userData?.data) setProfileData(defaultProfile(userData.data));
@@ -120,7 +123,7 @@ export default function SettingsPage() {
 
   const handlePasswordSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!passwordData.oldPassword)     return toast.error('Current password is required');
+    if (!passwordData.oldPassword)           return toast.error('Current password is required');
     if (passwordData.newPassword.length < 6) return toast.error('Password must be at least 6 characters');
     if (passwordData.newPassword !== passwordData.confirmPassword) return toast.error('Passwords do not match');
     passwordMutation.mutate(passwordData);

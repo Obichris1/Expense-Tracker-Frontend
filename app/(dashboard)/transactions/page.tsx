@@ -13,12 +13,14 @@ import {
   getTransactions,
   addTransaction,
   Transaction,
-  AddTransactionRequest
+  AddTransactionRequest,
+  ApiResponse,
+  PaginatedTransactions,
 } from '@/api/transactions';
-
 import { getAccounts, Account } from '@/api/accounts';
 
-// ---- Interfaces ----
+// ── Types ──────────────────────────────────────────────────────────────────
+
 interface LineItem {
   name: string;
   quantity: number;
@@ -40,6 +42,8 @@ interface ReceiptData {
   notes: string | null;
 }
 
+// ── Constants ──────────────────────────────────────────────────────────────
+
 const CATEGORY_MAP: Record<string, string> = {
   "dairy & eggs": "FOOD", produce: "FOOD", meat: "FOOD", snacks: "FOOD",
   "canned goods": "FOOD", groceries: "FOOD", food: "FOOD", dining: "FOOD",
@@ -51,7 +55,6 @@ const CATEGORY_MAP: Record<string, string> = {
   investment: "INVESTMENT", transfer: "TRANSFER",
 };
 
-// Category badge colours — maps enum value → Tailwind classes
 const CATEGORY_STYLES: Record<string, string> = {
   FOOD:          "bg-teal-50 text-teal-700",
   TRANSPORT:     "bg-amber-50 text-amber-700",
@@ -73,6 +76,22 @@ const CATEGORY_LABELS: Record<string, string> = {
   TRANSFER: "Transfer", OTHER: "Other",
 };
 
+// ── Shared MUI overrides ───────────────────────────────────────────────────
+
+const dialogSlotProps = {
+  paper: {
+    sx: { borderRadius: "16px", padding: 0, overflow: "hidden" },
+  },
+};
+
+// ── Shared input styles ────────────────────────────────────────────────────
+
+const inputClass  = "w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm text-gray-800 outline-none focus:border-gray-400 placeholder:text-gray-400";
+const selectClass = "w-full appearance-none rounded-lg border border-gray-200 px-4 py-2.5 text-sm text-gray-800 outline-none focus:border-gray-400 bg-white";
+const labelClass  = "block text-xs font-medium text-gray-500 mb-1";
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+
 function mapCategory(raw: string): string {
   const key = (raw || "").toLowerCase().trim();
   for (const [pattern, mapped] of Object.entries(CATEGORY_MAP)) {
@@ -89,30 +108,45 @@ function debounce<T extends (...args: any[]) => void>(fn: T, delay: number) {
   };
 }
 
-// ---- Page component ----
+function SelectChevron() {
+  return (
+    <svg
+      className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400"
+      fill="none" viewBox="0 0 24 24" stroke="currentColor"
+    >
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+    </svg>
+  );
+}
+
+// ── Page ───────────────────────────────────────────────────────────────────
+
 export default function TransactionsActivity() {
   const queryClient = useQueryClient();
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
-  const [showPayModal, setShowPayModal] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(10);
 
-  const { data, isLoading } = useQuery({
+  const [startDate,    setStartDate]    = useState("");
+  const [endDate,      setEndDate]      = useState("");
+  const [showPayModal, setShowPayModal] = useState(false);
+  const [searchQuery,  setSearchQuery]  = useState("");
+  const [page,         setPage]         = useState(1);
+  const [limit,        setLimit]        = useState(10);
+
+  // ── Fix 1: destructure `data` directly, not a non-existent `transactionsData` ──
+  const { data: transactionsData, isLoading } = useQuery<ApiResponse<PaginatedTransactions>>({
     queryKey: ['transactions', searchQuery, page, limit],
     queryFn: () => getTransactions({ s: searchQuery || undefined, page, limit }),
-    keepPreviousData: true,
+    // ── Fix 2: `keepPreviousData` was removed in TanStack Query v5 → use `placeholderData` ──
+    placeholderData: (prev) => prev,
   });
 
-  const { data: accountsData } = useQuery({
+  const { data: accountsData } = useQuery<Account[]>({
     queryKey: ['accounts'],
     queryFn: getAccounts,
   });
 
-  const accounts: Account[] = accountsData || [];
-  const transactions = data?.data?.data || [];
-  const total = data?.data?.total || 0;
+  const accounts: Account[]     = accountsData ?? [];
+  const transactions: Transaction[] = transactionsData?.data?.data ?? [];
+  const total                   = transactionsData?.data?.total ?? 0;
 
   const addTransactionMutation = useMutation({
     mutationFn: ({ accountId, data }: { accountId: number; data: AddTransactionRequest }) =>
@@ -137,7 +171,7 @@ export default function TransactionsActivity() {
   const filteredTransactions = useMemo(() => {
     if (!startDate || !endDate) return transactions;
     const start = new Date(startDate);
-    const end = new Date(endDate);
+    const end   = new Date(endDate);
     end.setHours(23, 59, 59, 999);
     return transactions.filter((t) => {
       const d = new Date(t.createdAt);
@@ -174,7 +208,7 @@ export default function TransactionsActivity() {
       accessorKey: "category",
       header: "Category",
       cell: ({ row }) => {
-        const cat = row.original.category as string;
+        const cat   = row.original.category as string;
         const style = CATEGORY_STYLES[cat] ?? CATEGORY_STYLES.OTHER;
         const label = CATEGORY_LABELS[cat] ?? cat;
         return (
@@ -237,19 +271,11 @@ export default function TransactionsActivity() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
           </svg>
           <span>From</span>
-          <input
-            type="date"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-            className="border-0 outline-none text-gray-700 bg-transparent text-sm"
-          />
+          <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)}
+            className="border-0 outline-none text-gray-700 bg-transparent text-sm" />
           <span>→</span>
-          <input
-            type="date"
-            value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
-            className="border-0 outline-none text-gray-700 bg-transparent text-sm"
-          />
+          <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)}
+            className="border-0 outline-none text-gray-700 bg-transparent text-sm" />
         </div>
 
         <div className="relative flex-1 max-w-xs">
@@ -295,28 +321,30 @@ export default function TransactionsActivity() {
   );
 }
 
-// ---- Payment Dialog ----
-function PaymentDialog({
-  open, onClose, onSubmit, isSubmitting, accounts,
-}: {
+// ── Payment Dialog ─────────────────────────────────────────────────────────
+
+interface PaymentDialogProps {
   open: boolean;
   onClose: () => void;
   accounts: Account[];
   onSubmit: (accountId: number, data: AddTransactionRequest) => void;
   isSubmitting: boolean;
-}) {
+}
+
+function PaymentDialog({ open, onClose, onSubmit, isSubmitting, accounts }: PaymentDialogProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [isScanning, setIsScanning] = useState(false);
+  const [isScanning,     setIsScanning]     = useState(false);
   const [scannedReceipt, setScannedReceipt] = useState<ReceiptData | null>(null);
-  const [formData, setFormData] = useState({
+
+  const defaultForm = {
     type: "expense",
     amount: "",
     accountId: "",
     category: "",
     date: new Date().toISOString().split("T")[0],
     description: "",
-    isRecurring: false,
-  });
+  };
+  const [formData, setFormData] = useState(defaultForm);
 
   React.useEffect(() => {
     if (accounts.length > 0 && !formData.accountId) {
@@ -339,13 +367,13 @@ function PaymentDialog({
       setScannedReceipt(data);
       setFormData((prev) => ({
         ...prev,
-        amount: data.totals?.total?.toString() ?? prev.amount,
+        amount:      data.totals?.total?.toString() ?? prev.amount,
         description: data.merchant
           ? `${data.merchant}${data.notes ? ` — ${data.notes.slice(0, 60)}` : ""}`
           : prev.description,
         category: mapCategory(data.category ?? ""),
-        date: data.date ? new Date(data.date).toISOString().split("T")[0] : prev.date,
-        type: "expense",
+        date:     data.date ? new Date(data.date).toISOString().split("T")[0] : prev.date,
+        type:     "expense",
       }));
       toast.success("Receipt scanned successfully!", { id: toastId });
     } catch (err: any) {
@@ -358,45 +386,35 @@ function PaymentDialog({
 
   const handleReset = () => {
     setFormData({
-      type: "expense",
-      amount: "",
+      ...defaultForm,
       accountId: accounts.length > 0 ? String(accounts[0].id) : "",
-      category: "",
-      date: new Date().toISOString().split("T")[0],
-      description: "",
-      isRecurring: false,
     });
     setScannedReceipt(null);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.accountId) {
-      toast.error("Please select an account");
-      return;
-    }
+    if (!formData.accountId) { toast.error("Please select an account"); return; }
     const selectedAccount = accounts.find((acc) => acc.id === Number(formData.accountId));
     onSubmit(Number(formData.accountId), {
-      amount: formData.amount,
+      amount:      formData.amount,
       description: formData.description,
-      source: selectedAccount?.accountName ?? "unknown",
-      category: formData.category || "OTHER",
+      source:      selectedAccount?.accountName ?? "unknown",
+      category:    formData.category || "OTHER",
     });
     handleReset();
   };
 
   const formatDisplayDate = (dateStr: string) =>
     dateStr
-      ? new Date(dateStr + "T00:00:00").toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })
+      ? new Date(dateStr + "T00:00:00").toLocaleDateString("en-US", {
+          month: "long", day: "numeric", year: "numeric",
+        })
       : "";
 
-  const selectClass = "w-full appearance-none rounded-lg border border-gray-200 px-4 py-2.5 text-sm text-gray-800 outline-none focus:border-gray-400 bg-white";
-  const inputClass  = "w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm text-gray-800 outline-none focus:border-gray-400 placeholder:text-gray-400";
-  const labelClass  = "block text-xs font-medium text-gray-500 mb-1";
-
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth
-      PaperProps={{ sx: { borderRadius: "16px", padding: 0, overflow: "hidden" } }}>
+    // ── Fix 3: PaperProps → slotProps ──
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth slotProps={dialogSlotProps}>
       <DialogTitle sx={{ padding: "24px 28px 16px", borderBottom: "1px solid #f0f0f0" }}>
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-medium text-gray-900">Add transaction</h2>
@@ -473,9 +491,7 @@ function PaymentDialog({
                 <option value="income">Income</option>
                 <option value="transfer">Transfer</option>
               </select>
-              <svg className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
+              <SelectChevron />
             </div>
           </div>
 
@@ -484,9 +500,7 @@ function PaymentDialog({
             <div>
               <label className={labelClass}>Amount</label>
               <input
-                type="number"
-                required
-                placeholder="0.00"
+                type="number" required placeholder="0.00"
                 value={formData.amount}
                 onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
                 className={inputClass}
@@ -508,9 +522,7 @@ function PaymentDialog({
                     </option>
                   ))}
                 </select>
-                <svg className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
+                <SelectChevron />
               </div>
             </div>
           </div>
@@ -533,9 +545,7 @@ function PaymentDialog({
                 <option value="TRANSFER">Transfer</option>
                 <option value="OTHER">Other</option>
               </select>
-              <svg className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
+              <SelectChevron />
             </div>
           </div>
 
@@ -562,8 +572,7 @@ function PaymentDialog({
           <div>
             <label className={labelClass}>Description</label>
             <input
-              type="text"
-              placeholder="Enter description"
+              type="text" placeholder="Enter description"
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               className={inputClass}
@@ -573,15 +582,13 @@ function PaymentDialog({
           {/* Footer */}
           <div className="grid grid-cols-2 gap-3 pt-1">
             <button
-              type="button"
-              onClick={onClose}
+              type="button" onClick={onClose}
               className="rounded-lg border border-gray-200 px-4 py-2.5 text-sm text-gray-700 font-medium hover:bg-gray-50 transition-colors"
             >
               Cancel
             </button>
             <button
-              type="submit"
-              disabled={isSubmitting}
+              type="submit" disabled={isSubmitting}
               className="rounded-lg bg-gray-900 px-4 py-2.5 text-sm text-white font-medium hover:bg-gray-700 disabled:opacity-50 transition-colors"
             >
               {isSubmitting ? "Processing…" : "Create transaction"}

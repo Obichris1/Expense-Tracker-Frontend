@@ -37,7 +37,7 @@ export interface User {
 export interface ApiResponse<T = null> {
   success: boolean;
   message: string;
-  data?: T;
+  data: T;
 }
 
 // API Functions

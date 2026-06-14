@@ -3,30 +3,28 @@
 
 import http from "@/lib/http";
 
+export type AccountType = 'SAVINGS' | 'CURRENT' | 'CASH' | 'INVESTMENT';
+export type Currency = 'NGN' | 'USD' | 'GBP' | 'EUR';
+
+
 export interface Account {
   id: number;
-  name: string;
-  type: 'cash' | 'visa' | 'paypal' | 'crypto';
+  accountName: string;
+  type: AccountType
   accountNumber: string;
-  balance: number;
-  lastUpdated: string;
+  accountBalance: number;
+  updatedAt: string;
   verified: boolean;
-}
-
-type Example  =  {
-  id: number;
-  name: string;
-  type: 'cash' | 'visa' | 'paypal' | 'crypto';
-  accountNumber: string;
-  balance: number;
+  currency :Currency
 }
 
 
 export interface CreateAccountRequest {
   name: string;
-  type: 'cash' | 'visa' | 'paypal' | 'crypto';
+  type: AccountType
  number: string;
   amount: number;
+  currency : Currency 
 }
 
 export interface DepositRequest {

@@ -9,14 +9,11 @@ import {
 import CloseIcon from '@mui/icons-material/Close';
 import toast, { Toaster } from 'react-hot-toast';
 
-import { getAccounts, createAccount, depositToAccount, Account, CreateAccountRequest } from '@/api/accounts';
+import { getAccounts, createAccount, depositToAccount, Account, CreateAccountRequest, AccountType, Currency } from '@/api/accounts';
 import { transferMoney, TransferMoneyRequest } from '@/api/transactions';
 import { formatCurrency } from '@/lib/utils';
 
 // ── Constants ──────────────────────────────────────────────────────────────
-
-type AccountType = 'SAVINGS' | 'CURRENT' | 'CASH' | 'INVESTMENT';
-type Currency    = 'NGN' | 'USD' | 'GBP' | 'EUR';
 
 const ACCOUNT_TYPES: { value: AccountType; label: string }[] = [
   { value: 'SAVINGS',    label: 'Savings'    },
@@ -26,27 +23,57 @@ const ACCOUNT_TYPES: { value: AccountType; label: string }[] = [
 ];
 
 const CURRENCIES: { value: Currency; label: string; symbol: string }[] = [
-  { value: 'NGN', label: 'Nigerian Naira',  symbol: '₦' },
-  { value: 'USD', label: 'US Dollar',       symbol: '$' },
-  { value: 'GBP', label: 'British Pound',   symbol: '£' },
-  { value: 'EUR', label: 'Euro',            symbol: '€' },
+  { value: 'NGN', label: 'Nigerian Naira', symbol: '₦' },
+  { value: 'USD', label: 'US Dollar',      symbol: '$' },
+  { value: 'GBP', label: 'British Pound',  symbol: '£' },
+  { value: 'EUR', label: 'Euro',           symbol: '€' },
 ];
 
 const ACCOUNT_STYLE: Record<AccountType | 'default', { icon: string; bg: string; color: string }> = {
-  SAVINGS:    { icon: 'ti-building-bank',      bg: '#E1F5EE', color: '#0F6E56' },
-  CURRENT:    { icon: 'ti-credit-card',        bg: '#E6F1FB', color: '#185FA5' },
-  CASH:       { icon: 'ti-cash',               bg: '#FAEEDA', color: '#854F0B' },
-  INVESTMENT: { icon: 'ti-trending-up',        bg: '#EEEDFE', color: '#3C3489' },
-  default:    { icon: 'ti-building-bank',      bg: '#E1F5EE', color: '#0F6E56' },
+  SAVINGS:    { icon: 'ti-building-bank', bg: '#E1F5EE', color: '#0F6E56' },
+  CURRENT:    { icon: 'ti-credit-card',   bg: '#E6F1FB', color: '#185FA5' },
+  CASH:       { icon: 'ti-cash',          bg: '#FAEEDA', color: '#854F0B' },
+  INVESTMENT: { icon: 'ti-trending-up',   bg: '#EEEDFE', color: '#3C3489' },
+  default:    { icon: 'ti-building-bank', bg: '#E1F5EE', color: '#0F6E56' },
 };
+
+// ── Shared MUI slot overrides ──────────────────────────────────────────────
+
+const dialogSlotProps = {
+  paper: {
+    sx: { borderRadius: '16px', padding: 0, overflow: 'hidden' },
+  },
+};
+
+const menuSlotProps = {
+  paper: {
+    sx: {
+      borderRadius: '10px',
+      border: '0.5px solid #e5e7eb',
+      boxShadow: '0 4px 16px rgba(0,0,0,0.06)',
+      minWidth: 160,
+    },
+  },
+};
+
+const titleSx   = { padding: '24px 28px 16px', borderBottom: '1px solid #f0f0f0' };
+const contentSx = { padding: '20px 28px 28px' };
+
+// ── Shared input styles ────────────────────────────────────────────────────
+
+const inputClass  = "w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm text-gray-800 outline-none focus:border-gray-400 bg-white";
+const labelClass  = "block text-xs text-gray-400 mb-1";
+const selectClass = `${inputClass} appearance-none`;
 
 // ── Sub-components ─────────────────────────────────────────────────────────
 
 function AccountIcon({ type }: { type: string }) {
   const s = ACCOUNT_STYLE[type as AccountType] ?? ACCOUNT_STYLE.default;
   return (
-    <div style={{ width: 36, height: 36, borderRadius: 8, background: s.bg, flexShrink: 0 }}
-      className="flex items-center justify-center">
+    <div
+      style={{ width: 36, height: 36, borderRadius: 8, background: s.bg, flexShrink: 0 }}
+      className="flex items-center justify-center"
+    >
       <i className={`ti ${s.icon}`} style={{ fontSize: 18, color: s.color }} aria-hidden="true" />
     </div>
   );
@@ -61,18 +88,14 @@ function CurrencyBadge({ currency }: { currency: string }) {
   );
 }
 
-// ── Shared styles ──────────────────────────────────────────────────────────
-
-const inputClass  = "w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm text-gray-800 outline-none focus:border-gray-400 bg-white";
-const labelClass  = "block text-xs text-gray-400 mb-1";
-const selectClass = `${inputClass} appearance-none`;
-
 function SelectWrapper({ children }: { children: React.ReactNode }) {
   return (
     <div className="relative">
       {children}
-      <svg className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400"
-        fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <svg
+        className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400"
+        fill="none" viewBox="0 0 24 24" stroke="currentColor"
+      >
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
       </svg>
     </div>
@@ -146,8 +169,14 @@ export default function AccountsPage() {
     onError: (e: any) => toast.error(e.response?.data?.message || 'Transfer failed'),
   });
 
-  const openMenu  = (e: React.MouseEvent<HTMLElement>, account: Account) => { setAnchorEl(e.currentTarget); setMenuAccount(account); };
-  const closeMenu = () => { setAnchorEl(null); setMenuAccount(null); };
+  const openMenu  = (e: React.MouseEvent<HTMLElement>, account: Account) => {
+    setAnchorEl(e.currentTarget);
+    setMenuAccount(account);
+  };
+  const closeMenu = () => {
+    setAnchorEl(null);
+    setMenuAccount(null);
+  };
 
   const handleTransferClick = () => {
     if (menuAccount) {
@@ -158,13 +187,15 @@ export default function AccountsPage() {
   };
 
   const handleAddMoneyFromMenu = () => {
-    if (menuAccount) { setSelectedAccount(menuAccount); setShowDepositModal(true); }
+    if (menuAccount) {
+      setSelectedAccount(menuAccount);
+      setShowDepositModal(true);
+    }
     closeMenu();
   };
 
-  const dialogPaper   = { sx: { borderRadius: '16px', padding: 0, overflow: 'hidden' } };
-  const titleSx       = { padding: '24px 28px 16px', borderBottom: '1px solid #f0f0f0' };
-  const contentSx     = { padding: '20px 28px 28px' };
+  const closeDeposit  = () => { setShowDepositModal(false);  setSelectedAccount(null); setDepositAmount(''); };
+  const closeTransfer = () => { setShowTransferModal(false); setTransferData({ from_account: '', to_account: '', amount: '' }); };
 
   if (isLoading) return (
     <div className="flex items-center justify-center h-64">
@@ -190,8 +221,10 @@ export default function AccountsPage() {
           <h1 className="text-xl font-medium text-gray-900">Accounts</h1>
           <p className="text-sm text-gray-400 mt-0.5">Manage your payment methods</p>
         </div>
-        <button onClick={() => setShowAddModal(true)}
-          className="flex items-center gap-2 rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700 transition-colors">
+        <button
+          onClick={() => setShowAddModal(true)}
+          className="flex items-center gap-2 rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700 transition-colors"
+        >
           <span className="text-base leading-none">+</span> New account
         </button>
       </div>
@@ -217,8 +250,11 @@ export default function AccountsPage() {
                   <p className="text-xs font-mono text-gray-400">{account.accountNumber}</p>
                 </div>
               </div>
-              <button onClick={(e) => openMenu(e, account)} aria-label="Account options"
-                className="p-1 rounded-md text-gray-300 hover:text-gray-500 hover:bg-gray-50 transition-colors">
+              <button
+                onClick={(e) => openMenu(e, account)}
+                aria-label="Account options"
+                className="p-1 rounded-md text-gray-300 hover:text-gray-500 hover:bg-gray-50 transition-colors"
+              >
                 <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
                 </svg>
@@ -249,7 +285,8 @@ export default function AccountsPage() {
               </div>
               <button
                 onClick={() => { setSelectedAccount(account); setShowDepositModal(true); }}
-                className="flex items-center gap-1.5 text-xs text-gray-500 bg-gray-50 border border-gray-200 rounded-lg px-3 py-1.5 hover:bg-gray-100 transition-colors">
+                className="flex items-center gap-1.5 text-xs text-gray-500 bg-gray-50 border border-gray-200 rounded-lg px-3 py-1.5 hover:bg-gray-100 transition-colors"
+              >
                 <span>+</span> Add money
               </button>
             </div>
@@ -258,10 +295,14 @@ export default function AccountsPage() {
       </div>
 
       {/* Dots menu */}
-      <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={closeMenu}
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={closeMenu}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
         transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-        PaperProps={{ sx: { borderRadius: '10px', border: '0.5px solid #e5e7eb', boxShadow: '0 4px 16px rgba(0,0,0,0.06)', minWidth: 160 } }}>
+        slotProps={menuSlotProps}
+      >
         <MuiMenuItem onClick={handleTransferClick} sx={{ fontSize: 13, gap: 1.5, py: 1 }}>
           <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
@@ -277,7 +318,13 @@ export default function AccountsPage() {
       </Menu>
 
       {/* ── Add account modal ── */}
-      <Dialog open={showAddModal} onClose={() => setShowAddModal(false)} maxWidth="sm" fullWidth PaperProps={dialogPaper}>
+      <Dialog
+        open={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        maxWidth="sm"
+        fullWidth
+        slotProps={dialogSlotProps}
+      >
         <DialogTitle sx={titleSx}>
           <div className="flex items-center justify-between">
             <h2 className="text-base font-medium text-gray-900">New account</h2>
@@ -289,14 +336,15 @@ export default function AccountsPage() {
         <DialogContent sx={contentSx}>
           <div className="space-y-4 mt-1">
 
-            {/* Type + Currency side by side */}
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className={labelClass}>Account type</label>
                 <SelectWrapper>
-                  <select value={newAccount.type}
+                  <select
+                    value={newAccount.type}
                     onChange={(e) => setNewAccount({ ...newAccount, type: e.target.value as AccountType })}
-                    className={selectClass}>
+                    className={selectClass}
+                  >
                     {ACCOUNT_TYPES.map(t => (
                       <option key={t.value} value={t.value}>{t.label}</option>
                     ))}
@@ -306,9 +354,11 @@ export default function AccountsPage() {
               <div>
                 <label className={labelClass}>Currency</label>
                 <SelectWrapper>
-                  <select value={newAccount.currency}
+                  <select
+                    value={newAccount.currency}
                     onChange={(e) => setNewAccount({ ...newAccount, currency: e.target.value as Currency })}
-                    className={selectClass}>
+                    className={selectClass}
+                  >
                     {CURRENCIES.map(c => (
                       <option key={c.value} value={c.value}>{c.symbol} {c.label}</option>
                     ))}
@@ -319,28 +369,43 @@ export default function AccountsPage() {
 
             <div>
               <label className={labelClass}>Account name</label>
-              <input className={inputClass} placeholder="e.g. GTBank savings" value={newAccount.name}
-                onChange={(e) => setNewAccount({ ...newAccount, name: e.target.value })} />
+              <input
+                className={inputClass}
+                placeholder="e.g. GTBank savings"
+                value={newAccount.name}
+                onChange={(e) => setNewAccount({ ...newAccount, name: e.target.value })}
+              />
             </div>
 
             <div>
               <label className={labelClass}>Account number</label>
-              <input className={inputClass} placeholder="0123456789" value={newAccount.number}
-                onChange={(e) => setNewAccount({ ...newAccount, number: e.target.value })} />
+              <input
+                className={inputClass}
+                placeholder="0123456789"
+                value={newAccount.number}
+                onChange={(e) => setNewAccount({ ...newAccount, number: e.target.value })}
+              />
             </div>
 
             <div>
               <label className={labelClass}>
                 Initial balance ({CURRENCIES.find(c => c.value === newAccount.currency)?.symbol ?? ''})
               </label>
-              <input type="number" className={inputClass} placeholder="0.00" value={newAccount.amount || ''}
-                onChange={(e) => setNewAccount({ ...newAccount, amount: parseFloat(e.target.value) || 0 })} />
+              <input
+                type="number"
+                className={inputClass}
+                placeholder="0.00"
+                value={newAccount.amount || ''}
+                onChange={(e) => setNewAccount({ ...newAccount, amount: parseFloat(e.target.value) || 0 })}
+              />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3 mt-6">
-            <button onClick={() => setShowAddModal(false)}
-              className="rounded-lg border border-gray-200 px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 transition-colors">
+            <button
+              onClick={() => setShowAddModal(false)}
+              className="rounded-lg border border-gray-200 px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 transition-colors"
+            >
               Cancel
             </button>
             <button
@@ -350,7 +415,8 @@ export default function AccountsPage() {
                 createMutation.mutate(newAccount);
               }}
               disabled={createMutation.isPending}
-              className="rounded-lg bg-gray-900 px-4 py-2.5 text-sm text-white font-medium hover:bg-gray-700 disabled:opacity-50 transition-colors">
+              className="rounded-lg bg-gray-900 px-4 py-2.5 text-sm text-white font-medium hover:bg-gray-700 disabled:opacity-50 transition-colors"
+            >
               {createMutation.isPending ? 'Creating…' : 'Create account'}
             </button>
           </div>
@@ -358,14 +424,17 @@ export default function AccountsPage() {
       </Dialog>
 
       {/* ── Deposit modal ── */}
-      <Dialog open={showDepositModal}
-        onClose={() => { setShowDepositModal(false); setSelectedAccount(null); setDepositAmount(''); }}
-        maxWidth="sm" fullWidth PaperProps={dialogPaper}>
+      <Dialog
+        open={showDepositModal}
+        onClose={closeDeposit}
+        maxWidth="sm"
+        fullWidth
+        slotProps={dialogSlotProps}
+      >
         <DialogTitle sx={titleSx}>
           <div className="flex items-center justify-between">
             <h2 className="text-base font-medium text-gray-900">Add money</h2>
-            <IconButton onClick={() => { setShowDepositModal(false); setSelectedAccount(null); setDepositAmount(''); }}
-              size="small" sx={{ color: '#9ca3af' }}>
+            <IconButton onClick={closeDeposit} size="small" sx={{ color: '#9ca3af' }}>
               <CloseIcon fontSize="small" />
             </IconButton>
           </div>
@@ -373,7 +442,6 @@ export default function AccountsPage() {
         <DialogContent sx={contentSx}>
           {selectedAccount && (
             <>
-              {/* Account summary pill */}
               <div className="flex items-center justify-between mb-5 p-3 rounded-lg bg-gray-50 border border-gray-100">
                 <div className="flex items-center gap-3">
                   <AccountIcon type={selectedAccount.type} />
@@ -389,13 +457,21 @@ export default function AccountsPage() {
                 <label className={labelClass}>
                   Amount ({CURRENCIES.find(c => c.value === (selectedAccount.currency ?? 'NGN'))?.symbol})
                 </label>
-                <input type="number" autoFocus placeholder="0.00" value={depositAmount}
-                  onChange={(e) => setDepositAmount(e.target.value)} className={inputClass} />
+                <input
+                  type="number"
+                  autoFocus
+                  placeholder="0.00"
+                  value={depositAmount}
+                  onChange={(e) => setDepositAmount(e.target.value)}
+                  className={inputClass}
+                />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
-                <button onClick={() => { setShowDepositModal(false); setSelectedAccount(null); setDepositAmount(''); }}
-                  className="rounded-lg border border-gray-200 px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 transition-colors">
+                <button
+                  onClick={closeDeposit}
+                  className="rounded-lg border border-gray-200 px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 transition-colors"
+                >
                   Cancel
                 </button>
                 <button
@@ -404,7 +480,8 @@ export default function AccountsPage() {
                     depositMutation.mutate({ accountId: selectedAccount.id, amount: parseFloat(depositAmount) });
                   }}
                   disabled={depositMutation.isPending || !depositAmount}
-                  className="rounded-lg bg-gray-900 px-4 py-2.5 text-sm text-white font-medium hover:bg-gray-700 disabled:opacity-50 transition-colors">
+                  className="rounded-lg bg-gray-900 px-4 py-2.5 text-sm text-white font-medium hover:bg-gray-700 disabled:opacity-50 transition-colors"
+                >
                   {depositMutation.isPending ? 'Processing…' : 'Add money'}
                 </button>
               </div>
@@ -414,15 +491,17 @@ export default function AccountsPage() {
       </Dialog>
 
       {/* ── Transfer modal ── */}
-      <Dialog open={showTransferModal}
-        onClose={() => { setShowTransferModal(false); setTransferData({ from_account: '', to_account: '', amount: '' }); }}
-        maxWidth="sm" fullWidth PaperProps={dialogPaper}>
+      <Dialog
+        open={showTransferModal}
+        onClose={closeTransfer}
+        maxWidth="sm"
+        fullWidth
+        slotProps={dialogSlotProps}
+      >
         <DialogTitle sx={titleSx}>
           <div className="flex items-center justify-between">
             <h2 className="text-base font-medium text-gray-900">Transfer funds</h2>
-            <IconButton
-              onClick={() => { setShowTransferModal(false); setTransferData({ from_account: '', to_account: '', amount: '' }); }}
-              size="small" sx={{ color: '#9ca3af' }}>
+            <IconButton onClick={closeTransfer} size="small" sx={{ color: '#9ca3af' }}>
               <CloseIcon fontSize="small" />
             </IconButton>
           </div>
@@ -432,9 +511,11 @@ export default function AccountsPage() {
             <div>
               <label className={labelClass}>From account</label>
               <SelectWrapper>
-                <select value={transferData.from_account}
+                <select
+                  value={transferData.from_account}
                   onChange={(e) => setTransferData({ ...transferData, from_account: e.target.value })}
-                  className={selectClass}>
+                  className={selectClass}
+                >
                   <option value="" disabled>Select account</option>
                   {accounts?.map((a) => (
                     <option key={a.id} value={a.accountNumber}>
@@ -448,9 +529,11 @@ export default function AccountsPage() {
             <div>
               <label className={labelClass}>To account</label>
               <SelectWrapper>
-                <select value={transferData.to_account}
+                <select
+                  value={transferData.to_account}
                   onChange={(e) => setTransferData({ ...transferData, to_account: e.target.value })}
-                  className={selectClass}>
+                  className={selectClass}
+                >
                   <option value="" disabled>Select account</option>
                   {accounts
                     ?.filter((a) => a.accountNumber !== transferData.from_account)
@@ -463,7 +546,7 @@ export default function AccountsPage() {
               </SelectWrapper>
             </div>
 
-            {/* Show currency mismatch warning */}
+            {/* Currency mismatch warning */}
             {transferData.from_account && transferData.to_account && (() => {
               const from = accounts?.find(a => a.accountNumber === transferData.from_account);
               const to   = accounts?.find(a => a.accountNumber === transferData.to_account);
@@ -478,16 +561,21 @@ export default function AccountsPage() {
 
             <div>
               <label className={labelClass}>Amount</label>
-              <input type="number" placeholder="0.00" value={transferData.amount}
+              <input
+                type="number"
+                placeholder="0.00"
+                value={transferData.amount}
                 onChange={(e) => setTransferData({ ...transferData, amount: e.target.value })}
-                className={inputClass} />
+                className={inputClass}
+              />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3 mt-6">
             <button
-              onClick={() => { setShowTransferModal(false); setTransferData({ from_account: '', to_account: '', amount: '' }); }}
-              className="rounded-lg border border-gray-200 px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 transition-colors">
+              onClick={closeTransfer}
+              className="rounded-lg border border-gray-200 px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 transition-colors"
+            >
               Cancel
             </button>
             <button
@@ -497,8 +585,14 @@ export default function AccountsPage() {
                 if (!transferData.amount || Number(transferData.amount) <= 0) return toast.error('Enter a valid amount');
                 transferMutation.mutate(transferData);
               }}
-              disabled={transferMutation.isPending || !transferData.from_account || !transferData.to_account || !transferData.amount}
-              className="rounded-lg bg-gray-900 px-4 py-2.5 text-sm text-white font-medium hover:bg-gray-700 disabled:opacity-50 transition-colors">
+              disabled={
+                transferMutation.isPending ||
+                !transferData.from_account ||
+                !transferData.to_account ||
+                !transferData.amount
+              }
+              className="rounded-lg bg-gray-900 px-4 py-2.5 text-sm text-white font-medium hover:bg-gray-700 disabled:opacity-50 transition-colors"
+            >
               {transferMutation.isPending ? 'Transferring…' : 'Transfer'}
             </button>
           </div>
