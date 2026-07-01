@@ -86,9 +86,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   <Icon size={18} />
                 </ListItemIcon>
                 <ListItemText
-                  primary={item.label}
-                  primaryTypographyProps={{ fontSize: 14, fontWeight: active ? 600 : 400 }}
-                />
+  primary={item.label}
+  slotProps={{
+    primary: {
+      sx: {
+        fontSize: 14,
+        fontWeight: active ? 600 : 400,
+      },
+    },
+  }}
+/>
                 {active && <ChevronRight size={14} color="#6366f1" />}
               </ListItemButton>
             );
@@ -119,9 +126,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   <Icon size={18} />
                 </ListItemIcon>
                 <ListItemText
-                  primary={item.label}
-                  primaryTypographyProps={{ fontSize: 14, fontWeight: active ? 600 : 400 }}
-                />
+  primary={item.label}
+  slotProps={{
+    primary: {
+      sx: {
+        fontSize: 14,
+        fontWeight: active ? 600 : 400,
+      },
+    },
+  }}
+/>
               </ListItemButton>
             );
           })}
@@ -163,7 +177,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <ListItemIcon sx={{ minWidth: 36, color: "inherit" }}>
             <LogOut size={18} />
           </ListItemIcon>
-          <ListItemText primary="Sign out" primaryTypographyProps={{ fontSize: 14, fontWeight: 500 }} />
+          {/* <ListItemText primary="Sign out" primaryTypographyProps={{ fontSize: 14, fontWeight: 500 }} /> */}
         </ListItemButton>
       </Box>
     </Box>
