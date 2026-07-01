@@ -4,7 +4,8 @@ import  http  from "@/lib/http";
  * REGISTER USER
  */
 export const register = async (payload: {
-  name: string;
+  firstName: string;
+  lastName :string;
   email: string;
   password: string;
 }) => {

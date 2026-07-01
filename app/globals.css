@@ -132,9 +132,11 @@
   }
   body {
     @apply bg-background text-foreground;
+    /* font-size: 30% */
   }
   html {
     @apply font-sans;
+
   }
 
   
@@ -148,4 +150,4 @@
     padding: ;
 
   } */
-}
+} 

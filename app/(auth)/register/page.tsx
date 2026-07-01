@@ -4,14 +4,15 @@ import { useState } from "react";
 import { useRegister } from "@/hooks/use-register";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Eye, EyeOff, ArrowRight } from "lucide-react";
+import { Eye, EyeOff, ArrowRight, LogIn } from "lucide-react";
 
 export default function RegisterPage() {
   const router = useRouter();
   const { mutate, isPending, error } = useRegister();
 
   const [form, setForm] = useState({
-    name: "",
+    firstName: "",
+    lastName: "",
     email: "",
     password: "",
     confirmPassword: "",
@@ -30,7 +31,12 @@ export default function RegisterPage() {
 
     setPasswordError("");
     mutate(
-      { name: form.name, email: form.email, password: form.password },
+      {
+        firstName: form.firstName,
+        lastName: form.lastName,
+        email: form.email,
+        password: form.password,
+      },
       { onSuccess: () => router.push("/") }
     );
   };
@@ -40,9 +46,9 @@ export default function RegisterPage() {
       {/* Left Panel - Image */}
       <div className="hidden lg:block lg:w-1/2 relative">
         <img
-          src="/auth-bg.jpg" // replace with your image
+          src="/budget2.jpg"
           alt="Budget background"
-          className="w-full h-full object-cover"
+          className="w-full h-screen object-cover"
         />
         <div className="absolute inset-0 bg-black/50" />
         <div className="absolute inset-0 flex flex-col justify-end p-12">
@@ -60,11 +66,16 @@ export default function RegisterPage() {
         <div className="w-full max-w-sm space-y-8">
           {/* Logo/Brand */}
           <div>
-            <div className="w-9 h-9 bg-black rounded-lg mb-6" />
+            <div className="w-9 h-9 bg-black rounded-lg text-white flex items-center justify-center mb-6">
+              <LogIn className="w-5 h-5" />
+            </div>
             <h2 className="text-2xl font-bold text-gray-900">Create account</h2>
             <p className="text-gray-500 text-sm mt-1">
               Already have an account?{" "}
-              <Link href="/login" className="text-black font-semibold underline underline-offset-2 hover:opacity-70 transition-opacity">
+              <Link
+                href="/login"
+                className="text-black font-semibold underline underline-offset-2 hover:opacity-70 transition-opacity"
+              >
                 Sign in
               </Link>
             </p>
@@ -73,24 +84,41 @@ export default function RegisterPage() {
           {/* Error */}
           {error && (
             <div className="bg-gray-50 border border-gray-200 text-gray-700 text-sm px-4 py-3 rounded-lg">
-              {(error as any)?.response?.data?.message || "Registration failed. Please try again."}
+              {(error as any)?.response?.data?.message ||
+                "Registration failed. Please try again."}
             </div>
           )}
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium text-gray-700">Full name</label>
-              <input
-                type="text"
-                placeholder="John Doe"
-                required
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-                className="w-full px-4 py-3 border border-gray-200 rounded-lg text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-black/10 focus:border-black transition-all"
-              />
+
+            {/* First + Last Name side by side */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-gray-700">First name</label>
+                <input
+                  type="text"
+                  placeholder="John"
+                  required
+                  value={form.firstName}
+                  onChange={(e) => setForm({ ...form, firstName: e.target.value })}
+                  className="w-full px-4 py-3 border border-gray-200 rounded-lg text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-black/10 focus:border-black transition-all"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-gray-700">Last name</label>
+                <input
+                  type="text"
+                  placeholder="Doe"
+                  required
+                  value={form.lastName}
+                  onChange={(e) => setForm({ ...form, lastName: e.target.value })}
+                  className="w-full px-4 py-3 border border-gray-200 rounded-lg text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-black/10 focus:border-black transition-all"
+                />
+              </div>
             </div>
 
+            {/* Email */}
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-gray-700">Email</label>
               <input
@@ -103,6 +131,7 @@ export default function RegisterPage() {
               />
             </div>
 
+            {/* Password */}
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-gray-700">Password</label>
               <div className="relative">
@@ -124,6 +153,7 @@ export default function RegisterPage() {
               </div>
             </div>
 
+            {/* Confirm Password */}
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-gray-700">Confirm password</label>
               <div className="relative">
@@ -147,7 +177,11 @@ export default function RegisterPage() {
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                   className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 transition-colors"
                 >
-                  {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  {showConfirmPassword ? (
+                    <EyeOff className="w-4 h-4" />
+                  ) : (
+                    <Eye className="w-4 h-4" />
+                  )}
                 </button>
               </div>
               {passwordError && (
@@ -155,6 +189,7 @@ export default function RegisterPage() {
               )}
             </div>
 
+            {/* Submit */}
             <button
               type="submit"
               disabled={isPending}
@@ -176,9 +211,13 @@ export default function RegisterPage() {
 
           <p className="text-center text-xs text-gray-400">
             By signing up, you agree to our{" "}
-            <Link href="/terms" className="underline hover:text-gray-600">Terms</Link>
-            {" "}and{" "}
-            <Link href="/privacy" className="underline hover:text-gray-600">Privacy Policy</Link>
+            <Link href="/terms" className="underline hover:text-gray-600">
+              Terms
+            </Link>{" "}
+            and{" "}
+            <Link href="/privacy" className="underline hover:text-gray-600">
+              Privacy Policy
+            </Link>
           </p>
         </div>
       </div>

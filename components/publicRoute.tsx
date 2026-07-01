@@ -3,6 +3,7 @@
 import { useMe } from "@/hooks/use-me";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import Loader from "./ui/loader";
 
 const PublicRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, isLoading } = useMe();
@@ -18,7 +19,7 @@ const PublicRoute = ({ children }: { children: React.ReactNode }) => {
   if (isLoading || user) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <p>Loading...</p>
+        <Loader />
       </div>
     );
   }

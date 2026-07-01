@@ -1,6 +1,7 @@
 import  {useMe} from "@/hooks/use-me"
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import Loader from "./ui/loader";
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, isLoading, isError } = useMe();
@@ -15,7 +16,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     }
   }, [isLoading, user]);
 
-  if (isLoading) return <p>Loading...</p>;
+  if (isLoading) return <Loader />;
 
   return <>{children}</>;
 };

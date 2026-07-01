@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useLogin } from "@/hooks/use-login";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Eye, EyeOff, ArrowRight } from "lucide-react";
+import { Eye, EyeOff, ArrowRight,LogIn } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -21,13 +21,13 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen !overflow-hidden">
       {/* Left Panel - Image */}
       <div className="hidden lg:block lg:w-1/2 relative">
         <img
-          src="/auth-bg.jpg" // replace with your image
+          src="/budget2.jpg" // replace with your image
           alt="Budget background"
-          className="w-full h-full object-cover"
+          className="w-full h-screen"
         />
         {/* Dark overlay */}
         <div className="absolute inset-0 bg-black/50" />
@@ -48,7 +48,9 @@ export default function LoginPage() {
         <div className="w-full max-w-sm space-y-8">
           {/* Logo/Brand */}
           <div>
-            <div className="w-9 h-9 bg-black rounded-lg mb-6" />
+          <div className="w-9 h-9 bg-black rounded-lg text-white flex items-center justify-center mb-6 ">
+  <LogIn className="w-5 h-5" />
+</div>
             <h2 className="text-2xl font-bold text-gray-900">Welcome back</h2>
             <p className="text-gray-500 text-sm mt-1">
               Don't have an account?{" "}

@@ -19,30 +19,16 @@ import {
 } from '@/api/transactions';
 import { getAccounts, Account } from '@/api/accounts';
 
-// ── Types ──────────────────────────────────────────────────────────────────
-
 interface LineItem {
-  name: string;
-  quantity: number;
-  unit_price: number;
-  amount: number;
-  category: string;
+  name: string; quantity: number; unit_price: number; amount: number; category: string;
 }
-
 interface ReceiptData {
-  merchant: string;
-  date: string | null;
-  time: string | null;
-  currency: string;
-  payment_method: string | null;
-  category: string;
-  line_items: LineItem[];
+  merchant: string; date: string | null; time: string | null; currency: string;
+  payment_method: string | null; category: string; line_items: LineItem[];
   totals: { subtotal: number; tax: number; discount: number; total: number };
   expense_categories: { category: string; amount: number }[];
   notes: string | null;
 }
-
-// ── Constants ──────────────────────────────────────────────────────────────
 
 const CATEGORY_MAP: Record<string, string> = {
   "dairy & eggs": "FOOD", produce: "FOOD", meat: "FOOD", snacks: "FOOD",
@@ -56,41 +42,41 @@ const CATEGORY_MAP: Record<string, string> = {
 };
 
 const CATEGORY_STYLES: Record<string, string> = {
-  FOOD:          "bg-teal-50 text-teal-700",
-  TRANSPORT:     "bg-amber-50 text-amber-700",
-  SHOPPING:      "bg-pink-50 text-pink-700",
-  BILLS:         "bg-orange-50 text-orange-700",
-  ENTERTAINMENT: "bg-purple-50 text-purple-700",
-  HEALTH:        "bg-red-50 text-red-700",
-  EDUCATION:     "bg-blue-50 text-blue-700",
-  SALARY:        "bg-blue-50 text-blue-700",
-  INVESTMENT:    "bg-green-50 text-green-700",
-  TRANSFER:      "bg-gray-100 text-gray-600",
-  OTHER:         "bg-gray-100 text-gray-500",
+  FOOD: "bg-teal-50 text-teal-700", TRANSPORT: "bg-amber-50 text-amber-700",
+  SHOPPING: "bg-pink-50 text-pink-700", BILLS: "bg-orange-50 text-orange-700",
+  ENTERTAINMENT: "bg-purple-50 text-purple-700", HEALTH: "bg-red-50 text-red-700",
+  EDUCATION: "bg-blue-50 text-blue-700", SALARY: "bg-blue-50 text-blue-700",
+  INVESTMENT: "bg-green-50 text-green-700", TRANSFER: "bg-gray-100 text-gray-600",
+  OTHER: "bg-gray-100 text-gray-500",
 };
 
 const CATEGORY_LABELS: Record<string, string> = {
-  FOOD: "Food", TRANSPORT: "Transport", SHOPPING: "Shopping",
-  BILLS: "Bills", ENTERTAINMENT: "Entertainment", HEALTH: "Health",
-  EDUCATION: "Education", SALARY: "Salary", INVESTMENT: "Investment",
-  TRANSFER: "Transfer", OTHER: "Other",
+  FOOD: "Food", TRANSPORT: "Transport", SHOPPING: "Shopping", BILLS: "Bills",
+  ENTERTAINMENT: "Entertainment", HEALTH: "Health", EDUCATION: "Education",
+  SALARY: "Salary", INVESTMENT: "Investment", TRANSFER: "Transfer", OTHER: "Other",
 };
-
-// ── Shared MUI overrides ───────────────────────────────────────────────────
 
 const dialogSlotProps = {
   paper: {
-    sx: { borderRadius: "16px", padding: 0, overflow: "hidden" },
+    sx: {
+      borderRadius: "16px",
+      padding: 0,
+      overflow: "hidden",
+      margin: "16px",
+      width: "calc(100% - 32px)",
+      maxWidth: "480px",
+      // Always center on all screen sizes
+      position: "fixed",
+      top: "50%",
+      left: "50%",
+      transform: "translate(-50%, -50%)",
+    },
   },
 };
-
-// ── Shared input styles ────────────────────────────────────────────────────
 
 const inputClass  = "w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm text-gray-800 outline-none focus:border-gray-400 placeholder:text-gray-400";
 const selectClass = "w-full appearance-none rounded-lg border border-gray-200 px-4 py-2.5 text-sm text-gray-800 outline-none focus:border-gray-400 bg-white";
 const labelClass  = "block text-xs font-medium text-gray-500 mb-1";
-
-// ── Helpers ────────────────────────────────────────────────────────────────
 
 function mapCategory(raw: string): string {
   const key = (raw || "").toLowerCase().trim();
@@ -110,20 +96,15 @@ function debounce<T extends (...args: any[]) => void>(fn: T, delay: number) {
 
 function SelectChevron() {
   return (
-    <svg
-      className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400"
-      fill="none" viewBox="0 0 24 24" stroke="currentColor"
-    >
+    <svg className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400"
+      fill="none" viewBox="0 0 24 24" stroke="currentColor">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
     </svg>
   );
 }
 
-// ── Page ───────────────────────────────────────────────────────────────────
-
 export default function TransactionsActivity() {
   const queryClient = useQueryClient();
-
   const [startDate,    setStartDate]    = useState("");
   const [endDate,      setEndDate]      = useState("");
   const [showPayModal, setShowPayModal] = useState(false);
@@ -131,11 +112,9 @@ export default function TransactionsActivity() {
   const [page,         setPage]         = useState(1);
   const [limit,        setLimit]        = useState(10);
 
-  // ── Fix 1: destructure `data` directly, not a non-existent `transactionsData` ──
   const { data: transactionsData, isLoading } = useQuery<ApiResponse<PaginatedTransactions>>({
     queryKey: ['transactions', searchQuery, page, limit],
     queryFn: () => getTransactions({ s: searchQuery || undefined, page, limit }),
-    // ── Fix 2: `keepPreviousData` was removed in TanStack Query v5 → use `placeholderData` ──
     placeholderData: (prev) => prev,
   });
 
@@ -144,9 +123,9 @@ export default function TransactionsActivity() {
     queryFn: getAccounts,
   });
 
-  const accounts: Account[]     = accountsData ?? [];
+  const accounts: Account[]         = accountsData ?? [];
   const transactions: Transaction[] = transactionsData?.data?.data ?? [];
-  const total                   = transactionsData?.data?.total ?? 0;
+  const total                       = transactionsData?.data?.total ?? 0;
 
   const addTransactionMutation = useMutation({
     mutationFn: ({ accountId, data }: { accountId: number; data: AddTransactionRequest }) =>
@@ -249,36 +228,40 @@ export default function TransactionsActivity() {
   ];
 
   return (
-    <div className="mx-auto max-w-7xl px-8 py-8">
+    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
       <Toaster position="top-right" />
 
       {/* Header */}
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-xl font-medium text-gray-900">Transactions activity</h1>
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-lg sm:text-xl font-medium text-gray-900">Transactions activity</h1>
         <button
           onClick={() => setShowPayModal(true)}
-          className="flex items-center gap-2 rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700 transition-colors"
+          className="flex items-center gap-2 rounded-lg bg-gray-900 px-3 sm:px-4 py-2 text-sm font-medium text-white hover:bg-gray-700 transition-colors"
         >
           <span className="text-base leading-none">+</span>
-          New transaction
+          <span className="hidden xs:inline">New transaction</span>
+          <span className="xs:hidden">New</span>
         </button>
       </div>
 
       {/* Toolbar */}
-      <div className="mb-4 flex items-center gap-3">
-        <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-500">
-          <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <div className="mb-4 flex flex-wrap items-center gap-2 sm:gap-3">
+
+        {/* Date range — stacks nicely on mobile */}
+        <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-500 w-full sm:w-auto">
+          <svg className="h-4 w-4 text-gray-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
           </svg>
-          <span>From</span>
+          <span className="text-xs text-gray-400">From</span>
           <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)}
-            className="border-0 outline-none text-gray-700 bg-transparent text-sm" />
-          <span>→</span>
+            className="border-0 outline-none text-gray-700 bg-transparent text-sm w-32" />
+          <span className="text-gray-300">→</span>
           <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)}
-            className="border-0 outline-none text-gray-700 bg-transparent text-sm" />
+            className="border-0 outline-none text-gray-700 bg-transparent text-sm w-32" />
         </div>
 
-        <div className="relative flex-1 max-w-xs">
+        {/* Search */}
+        <div className="relative flex-1 min-w-[160px]">
           <svg className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
@@ -290,11 +273,12 @@ export default function TransactionsActivity() {
           />
         </div>
 
-        <button className="ml-auto flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 transition-colors">
+        {/* Export */}
+        <button className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 sm:px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 transition-colors flex-shrink-0">
           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
           </svg>
-          Export
+          <span className="hidden sm:inline">Export</span>
         </button>
       </div>
 
@@ -324,9 +308,7 @@ export default function TransactionsActivity() {
 // ── Payment Dialog ─────────────────────────────────────────────────────────
 
 interface PaymentDialogProps {
-  open: boolean;
-  onClose: () => void;
-  accounts: Account[];
+  open: boolean; onClose: () => void; accounts: Account[];
   onSubmit: (accountId: number, data: AddTransactionRequest) => void;
   isSubmitting: boolean;
 }
@@ -337,12 +319,8 @@ function PaymentDialog({ open, onClose, onSubmit, isSubmitting, accounts }: Paym
   const [scannedReceipt, setScannedReceipt] = useState<ReceiptData | null>(null);
 
   const defaultForm = {
-    type: "expense",
-    amount: "",
-    accountId: "",
-    category: "",
-    date: new Date().toISOString().split("T")[0],
-    description: "",
+    type: "expense", amount: "", accountId: "",
+    category: "", date: new Date().toISOString().split("T")[0], description: "",
   };
   const [formData, setFormData] = useState(defaultForm);
 
@@ -373,7 +351,7 @@ function PaymentDialog({ open, onClose, onSubmit, isSubmitting, accounts }: Paym
           : prev.description,
         category: mapCategory(data.category ?? ""),
         date:     data.date ? new Date(data.date).toISOString().split("T")[0] : prev.date,
-        type:     "expense",
+        type: "expense",
       }));
       toast.success("Receipt scanned successfully!", { id: toastId });
     } catch (err: any) {
@@ -385,10 +363,7 @@ function PaymentDialog({ open, onClose, onSubmit, isSubmitting, accounts }: Paym
   };
 
   const handleReset = () => {
-    setFormData({
-      ...defaultForm,
-      accountId: accounts.length > 0 ? String(accounts[0].id) : "",
-    });
+    setFormData({ ...defaultForm, accountId: accounts.length > 0 ? String(accounts[0].id) : "" });
     setScannedReceipt(null);
   };
 
@@ -397,10 +372,9 @@ function PaymentDialog({ open, onClose, onSubmit, isSubmitting, accounts }: Paym
     if (!formData.accountId) { toast.error("Please select an account"); return; }
     const selectedAccount = accounts.find((acc) => acc.id === Number(formData.accountId));
     onSubmit(Number(formData.accountId), {
-      amount:      formData.amount,
-      description: formData.description,
-      source:      selectedAccount?.accountName ?? "unknown",
-      category:    formData.category || "OTHER",
+      amount: formData.amount, description: formData.description,
+      source: selectedAccount?.accountName ?? "unknown",
+      category: formData.category || "OTHER",
     });
     handleReset();
   };
@@ -413,31 +387,32 @@ function PaymentDialog({ open, onClose, onSubmit, isSubmitting, accounts }: Paym
       : "";
 
   return (
-    // ── Fix 3: PaperProps → slotProps ──
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth slotProps={dialogSlotProps}>
-      <DialogTitle sx={{ padding: "24px 28px 16px", borderBottom: "1px solid #f0f0f0" }}>
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="sm"
+      fullWidth
+      slotProps={dialogSlotProps}
+      // Ensure it's always centred, not bottom-sheet on mobile
+      sx={{ '& .MuiDialog-container': { alignItems: 'center' } }}
+    >
+      <DialogTitle sx={{ padding: "20px 24px 16px", borderBottom: "1px solid #f0f0f0" }}>
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-medium text-gray-900">Add transaction</h2>
+          <h2 className="text-base sm:text-lg font-medium text-gray-900">Add transaction</h2>
           <IconButton onClick={onClose} size="small" sx={{ color: "#9ca3af" }}>
             <CloseIcon fontSize="small" />
           </IconButton>
         </div>
       </DialogTitle>
 
-      <DialogContent sx={{ padding: "20px 28px 28px", overflowY: "auto" }}>
+      <DialogContent sx={{ padding: "20px 24px 24px", overflowY: "auto", maxHeight: "calc(100vh - 140px)" }}>
         <form onSubmit={handleSubmit} className="space-y-4">
 
           {/* Scan receipt */}
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp,application/pdf"
-            className="hidden"
-            onChange={handleScanReceipt}
-          />
+          <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp,application/pdf"
+            className="hidden" onChange={handleScanReceipt} />
           <button
-            type="button"
-            disabled={isScanning}
+            type="button" disabled={isScanning}
             onClick={() => fileInputRef.current?.click()}
             className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg text-white text-sm font-medium disabled:opacity-60 transition-opacity"
             style={{ background: "linear-gradient(to right, #f97316, #ec4899, #a855f7)" }}
@@ -453,7 +428,8 @@ function PaymentDialog({ open, onClose, onSubmit, isSubmitting, accounts }: Paym
             ) : (
               <>
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
                 Scan receipt with AI
@@ -499,22 +475,14 @@ function PaymentDialog({ open, onClose, onSubmit, isSubmitting, accounts }: Paym
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className={labelClass}>Amount</label>
-              <input
-                type="number" required placeholder="0.00"
-                value={formData.amount}
-                onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                className={inputClass}
-              />
+              <input type="number" required placeholder="0.00" value={formData.amount}
+                onChange={(e) => setFormData({ ...formData, amount: e.target.value })} className={inputClass} />
             </div>
             <div>
               <label className={labelClass}>Account</label>
               <div className="relative">
-                <select
-                  required
-                  value={formData.accountId}
-                  onChange={(e) => setFormData({ ...formData, accountId: e.target.value })}
-                  className={selectClass}
-                >
+                <select required value={formData.accountId}
+                  onChange={(e) => setFormData({ ...formData, accountId: e.target.value })} className={selectClass}>
                   <option value="" disabled>Select account</option>
                   {accounts.map((acc) => (
                     <option key={acc.id} value={acc.id}>
@@ -559,38 +527,27 @@ function PaymentDialog({ open, onClose, onSubmit, isSubmitting, accounts }: Paym
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
               </div>
-              <input
-                type="date"
-                value={formData.date}
+              <input type="date" value={formData.date}
                 onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                className="absolute inset-0 w-full opacity-0 cursor-pointer"
-              />
+                className="absolute inset-0 w-full opacity-0 cursor-pointer" />
             </div>
           </div>
 
           {/* Description */}
           <div>
             <label className={labelClass}>Description</label>
-            <input
-              type="text" placeholder="Enter description"
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className={inputClass}
-            />
+            <input type="text" placeholder="Enter description" value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })} className={inputClass} />
           </div>
 
           {/* Footer */}
           <div className="grid grid-cols-2 gap-3 pt-1">
-            <button
-              type="button" onClick={onClose}
-              className="rounded-lg border border-gray-200 px-4 py-2.5 text-sm text-gray-700 font-medium hover:bg-gray-50 transition-colors"
-            >
+            <button type="button" onClick={onClose}
+              className="rounded-lg border border-gray-200 px-4 py-2.5 text-sm text-gray-700 font-medium hover:bg-gray-50 transition-colors">
               Cancel
             </button>
-            <button
-              type="submit" disabled={isSubmitting}
-              className="rounded-lg bg-gray-900 px-4 py-2.5 text-sm text-white font-medium hover:bg-gray-700 disabled:opacity-50 transition-colors"
-            >
+            <button type="submit" disabled={isSubmitting}
+              className="rounded-lg bg-gray-900 px-4 py-2.5 text-sm text-white font-medium hover:bg-gray-700 disabled:opacity-50 transition-colors">
               {isSubmitting ? "Processing…" : "Create transaction"}
             </button>
           </div>
