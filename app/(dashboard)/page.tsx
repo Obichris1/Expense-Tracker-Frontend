@@ -3,8 +3,8 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { dashboardInformation } from '@/api/dashboard';
-import { getBudget, upsertBudget } from '@/api/budget';
+import { dashboardInformation } from '@/services/dashboard';
+import { getBudget, upsertBudget } from '@/services/budget';
 import Loader from '@/components/ui/loader';
 
 interface ChartDataPoint { label: string; income: number; expense: number; }

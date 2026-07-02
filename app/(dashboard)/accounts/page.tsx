@@ -9,8 +9,8 @@ import {
 import CloseIcon from '@mui/icons-material/Close';
 import toast, { Toaster } from 'react-hot-toast';
 
-import { getAccounts, createAccount, depositToAccount, Account, CreateAccountRequest, AccountType, Currency } from '@/api/accounts';
-import { transferMoney, TransferMoneyRequest } from '@/api/transactions';
+import { getAccounts, createAccount, depositToAccount, Account, CreateAccountRequest, AccountType, Currency } from '@/services/accounts';
+import { transferMoney, TransferMoneyRequest } from '@/services/transactions';
 import { formatCurrency } from '@/lib/utils';
 
 // ── Constants ──────────────────────────────────────────────────────────────

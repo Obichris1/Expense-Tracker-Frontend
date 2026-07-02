@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import toast, { Toaster } from 'react-hot-toast';
-import { userApi, ChangePasswordPayload, UpdateUserPayload, ApiResponse, User } from '@/api/user';
+import { userApi, ChangePasswordPayload, UpdateUserPayload, ApiResponse, User } from '@/services/user';
 
 const COUNTRIES = [
   { code: 'NG', name: 'Nigeria',        flag: '🇳🇬' },

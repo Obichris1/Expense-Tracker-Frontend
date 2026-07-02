@@ -16,8 +16,8 @@ import {
   AddTransactionRequest,
   ApiResponse,
   PaginatedTransactions,
-} from '@/api/transactions';
-import { getAccounts, Account } from '@/api/accounts';
+} from '@/services/transactions';
+import { getAccounts, Account } from '@/services/accounts';
 
 interface LineItem {
   name: string; quantity: number; unit_price: number; amount: number; category: string;
