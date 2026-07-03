@@ -36,6 +36,7 @@ export interface TransactionParams {
 }
 
 export interface AddTransactionRequest {
+  type :string
   amount: string;
   description: string;
   source: string;

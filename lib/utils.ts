@@ -14,3 +14,5 @@ export const formatCurrency = (
     currency,
   }).format(Number(amount));
 };
+
+
