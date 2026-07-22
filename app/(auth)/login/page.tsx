@@ -5,6 +5,8 @@ import { useLogin } from "@/hooks/use-login";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Eye, EyeOff, ArrowRight,LogIn } from "lucide-react";
+import { getErrorMessage } from "@/lib/errors";
+
 
 export default function LoginPage() {
   const router = useRouter();
@@ -62,10 +64,10 @@ export default function LoginPage() {
 
           {/* Error */}
           {error && (
-            <div className="bg-gray-50 border border-gray-200 text-gray-700 text-sm px-4 py-3 rounded-lg">
-              Invalid email or password. Please try again.
-            </div>
-          )}
+  <div className="bg-gray-50 border border-gray-200 text-gray-700 text-sm px-4 py-3 rounded-lg">
+    {getErrorMessage(error)}
+  </div>
+)}
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">

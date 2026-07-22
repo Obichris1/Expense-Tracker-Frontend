@@ -13,6 +13,8 @@ import {
 } from "lucide-react";
 import ProtectedRoute from "@/components/protectedroute";
 import { useLogout } from "@/hooks/use-logout";
+import AIAssistant from "@/components/AIassistant";
+
 
 const drawerWidth = 248;
 
@@ -375,6 +377,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {children}
         </Box>
       </Box>
+      <AIAssistant />
+
     </ProtectedRoute>
   );
 }

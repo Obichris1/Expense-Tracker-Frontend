@@ -10,6 +10,7 @@ import Loader from '@/components/ui/loader';
 import { CurrencyText } from '@/components/ui/currency-typography';
 import { useMe } from '@/hooks/use-me';
 
+
 // ── Types ──────────────────────────────────────────────────────────────────
 
 interface ChartDataPoint { label: string; income: number; expense: number; }
